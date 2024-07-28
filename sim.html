@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Blog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 1rem 0;
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: auto;
+            overflow: hidden;
+        }
+        .post {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .post h2 {
+            margin-top: 0;
+        }
+        .post p {
+            line-height: 1.6;
+        }
+        .post .meta {
+            color: #999;
+            font-size: 0.9rem;
+        }
+        footer {
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            padding: 10px 0;
+            margin-top: 20px;
+        }
+        .new-post {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .new-post input, .new-post textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .new-post button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>My Simple Blog</h1>
+        </div>
+    </header>
+    <div class="container">
+        <div id="posts"></div>
+        <div class="new-post">
+            <h2>Add a New Post</h2>
+            <input type="text" id="title" placeholder="Title">
+            <input type="text" id="date" placeholder="Date">
+            <input type="text" id="author" placeholder="Author">
+            <textarea id="content" placeholder="Content"></textarea>
+            <button onclick="addPost()">Add Post</button>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 My Simple Blog</p>
+    </footer>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchPosts();
+        });
+
+        function fetchPosts() {
+            fetch('http://localhost:3000/api/posts')
+                .then(response => response.json())
+                .then(data => {
+                    let postsContainer = document.getElementById('posts');
+                    postsContainer.innerHTML = '';
+                    data.forEach(post => {
+                        let postElement = document.createElement('div');
+                        postElement.className = 'post';
+                        postElement.innerHTML = `
+                            <h2>${post.title}</h2>
+                            <p class="meta">Posted on ${post.date} by ${post.author}</p>
+                            <p>${post.content}</p>
+                        `;
+                        postsContainer.appendChild(postElement);
+                    });
+                })
+                .catch(error => console.error('Error fetching posts:', error));
+        }
+
+        function addPost() {
+            const title = document.getElementById('title').value;
+            const date = document.getElementById('date').value;
+            const author = document.getElementById('author').value;
+            const content = document.getElementById('content').value;
+
+            const newPost = {
+                title,
+                date,
+                author,
+                content
+            };
+
+            fetch('http://localhost:3000/api/posts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newPost)
+            })
+            .then(response => response.json())
+            .then(data => {
+                fetchPosts();
+                document.getElementById('title').value = '';
+                document.getElementById('date').value = '';
+                document.getElementById('author').value = '';
+                document.getElementById('content').value = '';
+            })
+            .catch(error => console.error('Error adding post:', error));
+        }
+    </script>
+</body>
+</html>
