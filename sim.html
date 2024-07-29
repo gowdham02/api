@@ -46,24 +46,36 @@
             padding: 10px 0;
             margin-top: 20px;
         }
-        .new-post {
+        .new-post, .update-post {
             background: #fff;
             padding: 20px;
             margin: 20px 0;
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        .new-post input, .new-post textarea {
+        .new-post input, .new-post textarea,
+        .update-post input, .update-post textarea {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
         }
-        .new-post button {
+        .new-post button, .update-post button {
             padding: 10px 20px;
             background-color: #333;
             color: #fff;
             border: none;
             cursor: pointer;
+        }
+        .post button {
+            background-color: #e74c3c;
+            border: none;
+            color: #fff;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .post button.update {
+            background-color: #3498db;
         }
     </style>
 </head>
@@ -77,11 +89,20 @@
         <div id="posts"></div>
         <div class="new-post">
             <h2>Add a New Post</h2>
-            <input type="text" id="title" placeholder="Title">
-            <input type="text" id="date" placeholder="Date">
-            <input type="text" id="author" placeholder="Author">
-            <textarea id="content" placeholder="Content"></textarea>
+            <input type="text" id="new-title" placeholder="Title">
+            <input type="text" id="new-date" placeholder="Date">
+            <input type="text" id="new-author" placeholder="Author">
+            <textarea id="new-content" placeholder="Content"></textarea>
             <button onclick="addPost()">Add Post</button>
+        </div>
+        <div class="update-post" style="display: none;">
+            <h2>Update Post</h2>
+            <input type="hidden" id="update-id">
+            <input type="text" id="update-title" placeholder="Title">
+            <input type="text" id="update-date" placeholder="Date">
+            <input type="text" id="update-author" placeholder="Author">
+            <textarea id="update-content" placeholder="Content"></textarea>
+            <button onclick="updatePost()">Update Post</button>
         </div>
     </div>
     <footer>
@@ -89,6 +110,8 @@
     </footer>
 
     <script>
+        let currentEditId = null;
+
         document.addEventListener("DOMContentLoaded", function() {
             fetchPosts();
         });
@@ -106,6 +129,8 @@
                             <h2>${post.title}</h2>
                             <p class="meta">Posted on ${post.date} by ${post.author}</p>
                             <p>${post.content}</p>
+                            <button class="update" onclick="editPost('${post.id}')">Update</button>
+                            <button onclick="deletePost('${post.id}')">Delete</button>
                         `;
                         postsContainer.appendChild(postElement);
                     });
@@ -114,10 +139,10 @@
         }
 
         function addPost() {
-            const title = document.getElementById('title').value;
-            const date = document.getElementById('date').value;
-            const author = document.getElementById('author').value;
-            const content = document.getElementById('content').value;
+            const title = document.getElementById('new-title').value;
+            const date = document.getElementById('new-date').value;
+            const author = document.getElementById('new-author').value;
+            const content = document.getElementById('new-content').value;
 
             const newPost = {
                 title,
@@ -134,14 +159,79 @@
                 body: JSON.stringify(newPost)
             })
             .then(response => response.json())
-            .then(data => {
+            .then(() => {
                 fetchPosts();
-                document.getElementById('title').value = '';
-                document.getElementById('date').value = '';
-                document.getElementById('author').value = '';
-                document.getElementById('content').value = '';
+                clearNewPostForm();
             })
             .catch(error => console.error('Error adding post:', error));
+        }
+
+        function editPost(id) {
+            currentEditId = id;
+            fetch(`http://localhost:3000/api/posts/${id}`)
+                .then(response => response.json())
+                .then(post => {
+                    document.getElementById('update-id').value = post.id;
+                    document.getElementById('update-title').value = post.title;
+                    document.getElementById('update-date').value = post.date;
+                    document.getElementById('update-author').value = post.author;
+                    document.getElementById('update-content').value = post.content;
+                    document.querySelector('.update-post').style.display = 'block';
+                })
+                .catch(error => console.error('Error fetching post for edit:', error));
+        }
+
+        function updatePost() {
+            const id = document.getElementById('update-id').value;
+            const title = document.getElementById('update-title').value;
+            const date = document.getElementById('update-date').value;
+            const author = document.getElementById('update-author').value;
+            const content = document.getElementById('update-content').value;
+
+            const updatedPost = {
+                title,
+                date,
+                author,
+                content
+            };
+
+            fetch(`http://localhost:3000/api/posts/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedPost)
+            })
+            .then(response => response.json())
+            .then(() => {
+                fetchPosts();
+                clearUpdatePostForm();
+            })
+            .catch(error => console.error('Error updating post:', error));
+        }
+
+        function deletePost(id) {
+            fetch(`http://localhost:3000/api/posts/${id}`, {
+                method: 'DELETE'
+            })
+            .then(() => fetchPosts())
+            .catch(error => console.error('Error deleting post:', error));
+        }
+
+        function clearNewPostForm() {
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-date').value = '';
+            document.getElementById('new-author').value = '';
+            document.getElementById('new-content').value = '';
+        }
+
+        function clearUpdatePostForm() {
+            document.getElementById('update-id').value = '';
+            document.getElementById('update-title').value = '';
+            document.getElementById('update-date').value = '';
+            document.getElementById('update-author').value = '';
+            document.getElementById('update-content').value = '';
+            document.querySelector('.update-post').style.display = 'none';
         }
     </script>
 </body>
